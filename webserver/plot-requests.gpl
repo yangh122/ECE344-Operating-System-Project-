@@ -1,0 +1,11 @@
+set terminal pdf enhanced
+set output "plot-requests.pdf"
+
+set title "Run Time vs Max Requests"
+set logscale x 2
+set yrange [0:]
+set xtics (1, 2, 4, 8, 16, 32)
+set xlabel "Max Requests"
+set ylabel "Time (seconds)"
+
+plot "plot-requests.out" using ($1 >= 1 ? $1 : 0.5):2 with linespoints linestyle 1 ps 0 title "Run Time", "" using ($1 >= 1 ? $1 : 0.5):2:3 linestyle 1 linewidth 2 ps 0 with errorbars title ""

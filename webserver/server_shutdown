@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# simple script to shutdown the server, which is listening on a named pipe
+
+if [ ! -p "./server_exit" ]; then
+    exit 1
+fi	   
+
+# can echo any one or more characters
+echo "shutdown" > ./server_exit
+
+# just wait for server to shutdown
+sleep 1
+exit 0

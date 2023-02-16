@@ -1,0 +1,82 @@
+#!/bin/bash
+
+#
+# This script takes the same parameters as the ./server program, 
+# as well as a fileset parameter that is passed to the client program.
+# 
+# This script runs the server program, and then it runs the client program
+# several times.
+#
+# It produces the average run time and the (population) standard deviation
+# across multiple client runs.
+#
+# The client run times are also stored in the file called run.out
+#
+
+if [ $# -ne 5 ]; then
+   echo "Usage: ./run-one-experiment port nr_threads max_requests max_cache_size fileset_dir.idx" 1>&2
+   exit 1
+fi
+
+HOST=127.0.0.1
+PORT=$1
+NR_THREADS=$2
+MAX_REQUESTS=$3
+CACHE_SIZE=$4
+FILESET=$5
+
+./server $PORT $NR_THREADS $MAX_REQUESTS $CACHE_SIZE > server.log &
+SERVER_PID=$!
+
+function force_shutdown {
+    echo "forcing server shutdown" 1>&2
+    kill -15 $SERVER_PID 2> /dev/null
+    sleep 4
+    kill -9 $SERVER_PID 2> /dev/null
+    sleep 1
+    exit $1
+}
+
+trap 'force_shutdown 1' 1 2 3 9 15
+
+i=1
+n=6
+
+# give some time for the server to start up
+sleep 1
+
+rm -f run.out
+while [ $i -le $n ]; do
+    ./client -t $HOST $PORT 100 10 $FILESET >> run.out;
+    if [ $? -ne 0 ]; then
+	echo "error: run $i: ./client -t $HOST $PORT 100 10 $FILESET" 1>&2
+	# script will exit
+	force_shutdown 1
+    fi
+    i=$[$i+1];
+done
+
+if [ ! -f run.out ]; then
+    echo "run.out not found" 1>&2;
+    exit 1
+fi
+LINES=$(wc -l < run.out)
+if [ "$LINES" != "$n" ]; then
+    echo "All $n runs were not successful" 1>&2;
+    exit 1;
+fi
+
+# try to cleanly shutdown the server
+./server_shutdown
+ 
+# check if server still exists
+if [ ! -d "/proc/$SERVER_PID" ]; then
+    # print the average and the standard devation of the run times
+    # skip the first warmup run 
+    tail -n +2 run.out | awk '{sum += $4; dev += $4^2} END {printf "%.4f, %.4f\n", sum/NR, sqrt(dev/NR-(sum/NR)^2)}'
+    mv run.out run-$NR_THREADS-$MAX_REQUESTS-$CACHE_SIZE.out
+else
+    echo "server did not shutdown cleanly" 1>&2;
+    force_shutdown 1
+fi
+exit 0

@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# this script takes one required parameter, a port number.
+#
+# Using the run-one-experiment script, it runs experiments while varying
+# the cache size parameter
+
+function usage()
+{
+    echo "Usage: ./run-cache-experiment port" 1>&2
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage;
+fi
+
+PORT=$1
+
+# start by creating a file set in tmp directory
+# mkdir -p /tmp/$(id -u -n)
+# FILESET=/tmp/$(id -u -n)/fileset
+# ./fileset -d $FILESET > /dev/null
+
+# start by creating a file set
+FILESET=fileset_dir
+./fileset -d $FILESET > /dev/null
+
+date
+
+rm -f plot-cachesize.out
+echo "Running cachesize experiment. Output goes to plot-cachesize.out"
+for cachesize in 0 262144 524288 1048576 2097152 4194304 8388608; do
+    echo -n "$cachesize, " >> plot-cachesize.out
+    ./run-one-experiment $PORT 8 8 $cachesize $FILESET.idx >> plot-cachesize.out
+    mv server.log server-c$cachesize.log
+done
+echo "Cachesize experiment done."
+date
+
+exit 0

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# this script plots the output of the run-experiment script.
+
+gnuplot plot-threads.gpl
+gnuplot plot-requests.gpl
+

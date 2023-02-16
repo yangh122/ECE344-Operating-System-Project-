@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# this script takes one required parameter, a port number.
+#
+# Using the run-one-experiment script, it runs experiments while varying two
+# parameters: 1) threads, 2) requests
+
+function usage()
+{
+    echo "Usage: ./run-experiment port" 1>&2
+    exit 1
+}
+
+if [ $# -ne 1 ]; then
+    usage;
+fi
+
+PORT=$1
+
+# start by creating a file set in tmp directory
+# mkdir -p /tmp/$(id -u -n)
+# FILESET=/tmp/$(id -u -n)/fileset
+# ./fileset -d $FILESET > /dev/null
+
+# start by creating a file set
+FILESET=fileset_dir
+./fileset -d $FILESET > /dev/null
+
+date
+
+rm -f plot-threads.out
+echo "Running threads experiment. Output goes to plot-threads.out"
+for threads in 0 1 2 4 8 16 32; do
+    echo -n "$threads, " >> plot-threads.out
+    ./run-one-experiment $PORT $threads 8 0 $FILESET.idx >> plot-threads.out
+    mv server.log server-t$threads.log
+done
+echo "Threads experiment done."
+date
+
+rm -f plot-requests.out
+echo "Running requests experiment. Output goes to plot-requests.out"
+for requests in 1 2 4 8 16 32; do
+    echo -n "$requests, " >> plot-requests.out
+    ./run-one-experiment $PORT 8 $requests 0 $FILESET.idx >> plot-requests.out
+    mv server.log server-r$threads.log
+done
+echo "Requests experiment done."
+date
+
+exit 0

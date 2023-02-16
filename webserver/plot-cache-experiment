@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# this script plots the output of the run-cache-experiment script.
+
+gnuplot plot-cachesize.gpl
+
